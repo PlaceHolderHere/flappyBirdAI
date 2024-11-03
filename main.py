@@ -170,6 +170,7 @@ for i in range(num_bots):
 # ## Load Previous Weights
 # num_iterations = np.load('iterations.npy')
 # pygame.display.set_caption(f"Placeholderhere's Flappy Bird; Iterations: {num_iterations}")
+# high_score = np.load('high_score.npy')
 # bot_variables = [[0, Bird(SCREEN_WIDTH // 4, SCREEN_HEIGHT // 2, bird_img1), [np.load('bias.npy'), [np.load('W0.npy'), np.load('W1.npy')]]],]
 # for i in range(num_bots - 1):
 #     bot_variables.append(
@@ -257,17 +258,25 @@ while running:
 
         elif dead_bots >= num_bots:
             bot_variables.sort(key=lambda x: x[0])
+
+
             if high_score < bot_variables[-1][0]:
+                best_weights = bot_variables[-1][2]
+                W0, W1 = best_weights[1]
+                b = best_weights[0]
                 high_score = bot_variables[-1][0]
-            best_weights = bot_variables[-1][2]
-            W0, W1 = best_weights[1]
-            b = best_weights[0]
+
+                np.save('high_score.npy', high_score)
+                np.save('W0.npy', W0)
+                np.save('W1.npy', W1)
+                np.save('bias.npy', b)
+
+            else:
+                W0 = np.load('W0.npy')
+                W1 = np.load('W1.npy')
+                b = np.load('bias.npy')
+
             np.save('iterations.npy', num_iterations)
-            np.save('W0.npy', W0)
-            np.save('W1.npy', W1)
-            np.save('bias.npy', b)
-
-
             ## RESET VARIABLES
             # SCORE
             score = 0
