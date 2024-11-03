@@ -7,7 +7,7 @@ SCREEN_WIDTH = 520
 SCREEN_HEIGHT = 768
 CLOCK = pygame.time.Clock()
 CELL_SIZE = 64
-FPS = 60
+FPS = 240
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 SCROLL_SPEED = 3
@@ -123,6 +123,14 @@ def calculate_output(input_matrix, weights, bias):
     column_average = np.sum(a3, axis=0)
     return column_average
 
+def get_closest_pipe_index(pipes, playerX):
+    closest_pipe_index = 0
+    for pipe_index, pipe in enumerate(pipes):
+        if pipe.x <= pipes[closest_pipe_index].x and pipe.x + pipe.size1[0] > playerX:
+            closest_pipe_index = pipe_index
+
+    return closest_pipe_index
+
 ## GAME VARIABLES
 running = True
 score = 0
@@ -151,11 +159,11 @@ for pipe_index, pipe in enumerate(pipes):
     pipe.y2 = pipe.y1 + SCREEN_HEIGHT + gap
 
 ## """MACHINE LEARNING"""
-# Input: playerX, sizeX, playerY, sizeY, jump_height, gravity, (pipeX, pipe_sizeX, pipe_gapY, gap_sizeY) * 3 pipes
-num_neurons = 8
-input_size = 18
+# Input: playerX, sizeX, playerY, sizeY, jump_height, gravity, baseY, pipeX, pipe_sizeX, pipe.y1, pipe.y2, pipe_gap_sizeY(closest pipe)
+num_neurons = 64
+input_size = 12
 output_size = 2
-num_bots = 64
+num_bots = 128
 dead_bots = 0
 
 ## Generate Random Weights
@@ -231,6 +239,7 @@ while running:
         ## BOTS
         # Bot = [score, Bird(Class), weights]
         if dead_bots < num_bots:
+            closest_pipe_index = get_closest_pipe_index(pipes, bot_variables[1][1].x)
             for bot_index, bot in enumerate(bot_variables):
                 if bot[1].alive:
                     if bot[1].y + bot[1].size[1] > baseY:
@@ -247,13 +256,13 @@ while running:
 
                     bot[1].velocityY += GRAVITY
                     bot[1].y += bot[1].velocityY
-                    input_matrix = [bot[1].x, bot[1].size[0], bot[1].y, bot[1].size[1], bot[1].jump_height, GRAVITY,
-                                    pipes[0].x, pipes[0].y1 + SCREEN_HEIGHT, pipes[0].y2 - (pipes[0].y1 + SCREEN_HEIGHT),
-                                    pipes[0].size1[0],
-                                    pipes[1].x, pipes[1].y1 + SCREEN_HEIGHT, pipes[1].y2 - (pipes[1].y1 + SCREEN_HEIGHT),
-                                    pipes[1].size1[0],
-                                    pipes[2].x, pipes[2].y1 + SCREEN_HEIGHT, pipes[2].y2 - (pipes[2].y1 + SCREEN_HEIGHT),
-                                    pipes[2].size1[0]]
+
+                    # Input: playerX, sizeX, playerY, sizeY, jump_height, gravity, baseY, pipeX, pipe_sizeX, pipe.y1,
+                    # pipe.y2, pipe_gap_sizeY(closest pipe)
+                    input_matrix = [bot[1].x, bot[1].size[0], bot[1].y, bot[1].size[1], bot[1].jump_height, GRAVITY, baseY,
+                                    pipes[closest_pipe_index].x, pipes[closest_pipe_index].y1 + SCREEN_HEIGHT,
+                                    pipes[closest_pipe_index].y2, pipes[closest_pipe_index].size1[0],
+                                    pipes[closest_pipe_index].y2 - (pipes[closest_pipe_index].y1 + SCREEN_HEIGHT)]
 
                     scaled_input_matrix = scale_to_range(input_matrix, -1, 1)
                     # Input, Weights, Bias
@@ -267,23 +276,16 @@ while running:
         elif dead_bots >= num_bots:
             bot_variables.sort(key=lambda x: x[0])
 
-
             if high_score < bot_variables[-1][0]:
-                best_weights = bot_variables[-1][2]
-                W0, W1 = best_weights[1]
-                b = best_weights[0]
                 high_score = bot_variables[-1][0]
-
                 np.save('high_score.npy', high_score)
-                np.save('W0.npy', W0)
-                np.save('W1.npy', W1)
-                np.save('bias.npy', b)
 
-            else:
-                W0 = np.load('W0.npy')
-                W1 = np.load('W1.npy')
-                b = np.load('bias.npy')
-
+            best_weights = bot_variables[-1][2]
+            W0, W1 = best_weights[1]
+            b = best_weights[0]
+            np.save('W0.npy', W0)
+            np.save('W1.npy', W1)
+            np.save('bias.npy', b)
             np.save('iterations.npy', num_iterations)
             ## RESET VARIABLES
             # SCORE
