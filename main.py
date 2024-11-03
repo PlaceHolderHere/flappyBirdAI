@@ -56,12 +56,13 @@ class Bird:
         self.sprite = sprite
         self.velocityY = 0
         self.alive = True
+        self.jump_height = 4
 
     def blit(self, win):
         win.blit(self.sprite, (self.x, self.y))
 
     def flap(self):
-        self.velocityY -= 4
+        self.velocityY -= self.jump_height
 
 ## FUNCTIONS
 def display_text(win, x, y, msg, color):
@@ -150,9 +151,9 @@ for pipe_index, pipe in enumerate(pipes):
     pipe.y2 = pipe.y1 + SCREEN_HEIGHT + gap
 
 ## """MACHINE LEARNING"""
-# Input: playerX, sizeX, playerY, sizeY, (pipeX, pipe_sizeX, pipe_gapY, gap_sizeY) * 3 pipes
+# Input: playerX, sizeX, playerY, sizeY, jump_height, gravity, (pipeX, pipe_sizeX, pipe_gapY, gap_sizeY) * 3 pipes
 num_neurons = 8
-input_size = 16
+input_size = 18
 output_size = 2
 num_bots = 64
 dead_bots = 0
@@ -166,6 +167,13 @@ for i in range(num_bots):
     bot_variables.append([0, Bird(SCREEN_WIDTH // 4, SCREEN_HEIGHT // 2, bird_img1), generate_weights(seed=False,
         starting_weights=empty_weights, starting_bias=empty_bias, num_input=input_size, num_neurons=num_neurons,
         num_output=output_size)])
+
+# Reset npy files
+np.save('high_score.npy', 0)
+np.save('W0.npy', empty_weights[0])
+np.save('W1.npy', empty_weights[1])
+np.save('bias.npy', empty_bias)
+np.save('high_score.npy', 0)
 
 # ## Load Previous Weights
 # num_iterations = np.load('iterations.npy')
@@ -239,7 +247,7 @@ while running:
 
                     bot[1].velocityY += GRAVITY
                     bot[1].y += bot[1].velocityY
-                    input_matrix = [bot[1].x, bot[1].size[0], bot[1].y, bot[1].size[1],
+                    input_matrix = [bot[1].x, bot[1].size[0], bot[1].y, bot[1].size[1], bot[1].jump_height, GRAVITY,
                                     pipes[0].x, pipes[0].y1 + SCREEN_HEIGHT, pipes[0].y2 - (pipes[0].y1 + SCREEN_HEIGHT),
                                     pipes[0].size1[0],
                                     pipes[1].x, pipes[1].y1 + SCREEN_HEIGHT, pipes[1].y2 - (pipes[1].y1 + SCREEN_HEIGHT),
