@@ -127,7 +127,7 @@ running = True
 score = 0
 high_score = 0
 num_iterations = 0
-run_game = False
+run_game = True
 
 base_height = 128
 base1X = 0
